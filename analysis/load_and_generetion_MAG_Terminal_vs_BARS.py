@@ -382,9 +382,9 @@ def create_dict_out_xml(file_name_xml: str = "file.xml"):
 
 def mt_BarsMDP(path_save_excel: str = "file_mpt.xlsx") -> None:
     check_file_mptsmz = os.path.isfile('smzu_mega_XML_UR_MDP.mptsmz')
-    check_file_mpt = os.path.isfile('date.mpt')
+    check_file_mpt = os.path.isfile('data/date.mpt')
     if check_file_mpt:
-        path_file = 'date.mpt'
+        path_file = 'data/date.mpt'
     elif check_file_mptsmz:
         path_file = 'smzu_mega_XML_UR_MDP.mptsmz'
     else:
