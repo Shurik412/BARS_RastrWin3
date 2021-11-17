@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import csv
+import os.path
 import xml.etree.ElementTree as et
 from re import findall
 
@@ -7,8 +8,9 @@ import pandas as pd
 from openpyxl import (Workbook, load_workbook)
 from openpyxl.chart import (ScatterChart, Reference, Series)
 from openpyxl.utils import get_column_letter
+from win32com.client import Dispatch
 
-from AstraRastr import RASTR
+RASTR = Dispatch('Astra.Rastr')
 
 NAME_AREA_DICT = {
     "ti":
@@ -237,35 +239,31 @@ NAME_AREA_DICT = {
 
 
 def create_dict_out_xml(file_name_xml: str = "file.xml"):
-    """
-    Функция обрабатывает XML файл выгруженный из ОИК (Телеметрия (ТМ и ТС))
-    :param file_name_xml: файл XML;
-    :return: возвращает массив DataFrame Pandas;
-    """
-    xtree = et.parse(file_name_xml)
-    xroot = xtree.getroot()
+    xroot = et.parse(file_name_xml).getroot()
     df_cols = ["Name", "Time", "Value"]
-    rows = []
+    data_list = []
     for index, node in enumerate(xroot):
         s_name = node.find("Name").text if node is not None else None
         s_time = node.find("Time").text if node is not None else None
         s_value = node.find("Value").text if node is not None else None
-        rows.append({
-            "Name": s_name,
-            "Time": s_time,
-            "Value": s_value
-        })
-    out_df = pd.DataFrame(rows, columns=df_cols)
+        data_list.append({"Name": s_name, "Time": s_time, "Value": s_value})
+
+    out_df = pd.DataFrame(data_list, columns=df_cols)
     pattern = r'\d{2}.\d{2}.\d{4} \d{2}:\d{2}:\d{2}'
+
     for key in NAME_AREA_DICT['ti']:
         out_df.Name = out_df.Name.replace(key, NAME_AREA_DICT['ti'][key])
-    for val in out_df.Time:
-        rename_format_time = findall(pattern, val)
-        out_df.Time = out_df.Time.replace(val, rename_format_time[0])
+
+    for value in out_df.Time:
+        rename_format_time = findall(pattern, value)
+        out_df.Time = out_df.Time.replace(value, rename_format_time[0])
+
     NAME_FILE_CSV = "csv_area2.csv"
     out_df.to_csv(NAME_FILE_CSV, sep=';', encoding='1251')
     wb = Workbook()
     ws = wb.active
+    if os.path.exists(NAME_FILE_CSV):
+        print(f'Файл "{NAME_FILE_CSV}"!')
     with open(NAME_FILE_CSV) as file_csv:
         reader = csv.reader(file_csv, delimiter=';')
         for row in reader:
@@ -290,14 +288,14 @@ def create_dict_out_xml(file_name_xml: str = "file.xml"):
                 list_name_.append(_name)
                 list_time_.append(_time)
                 list_value_.append(_value)
-        for i in range(0, 25):
-            ws_[f'{get_column_letter(1)}{i + 2}'] = i
-        for index, val in enumerate(list_name_):
-            ws_[f'{get_column_letter(2)}{index + 2}'] = val
-        for index, val in enumerate(list_time_):
-            ws_[f'{get_column_letter(3)}{index + 2}'] = val
-        for index, val in enumerate(list_value_):
-            ws_[f'{get_column_letter(4)}{index + 2}'] = float(val)
+        for index in range(0, 25):
+            ws_[f'{get_column_letter(1)}{index + 2}'] = index
+        for index, value in enumerate(list_name_):
+            ws_[f'{get_column_letter(2)}{index + 2}'] = value
+        for index, value in enumerate(list_time_):
+            ws_[f'{get_column_letter(3)}{index + 2}'] = value
+        for index, value in enumerate(list_value_):
+            ws_[f'{get_column_letter(4)}{index + 2}'] = float(value)
     wb.save("file.xlsx")
     list_name_title_excel = ['Час(точка)', 'Название', 'Время', 'Р, МВт']
     for key in NAME_AREA_DICT['Correction']:
@@ -354,37 +352,56 @@ def create_dict_out_xml(file_name_xml: str = "file.xml"):
     wb.save("file.xlsx")
 
 
-def mt_BarsMDP(path_file: str = "date.mpt", path_save_excel: str = "file_mpt.xlsx") -> None:
-    """
+def mt_BarsMDP(path_save_excel: str = "file_mpt.xlsx") -> None:
+    check_file_mptsmz = os.path.isfile('smzu_mega_XML_UR_MDP.mptsmz')
+    check_file_mpt = os.path.isfile('date.mpt')
+    if check_file_mpt:
+        path_file = 'date.mpt'
+    elif check_file_mptsmz:
+        path_file = 'smzu_mega_XML_UR_MDP.mptsmz'
+    else:
+        path_file = None
+    SHABLON_NAME = input('SHABLON:'
+                         '\n\t- Если "1" то "C:\Program Files\RastrWin3\RastrWin3\SHABLON\мегаточка.mpt";'
+                         '\n\t- Если "2" то "C:\Program Files\RastrWin3\RastrWin3\SHABLON\мегаточка.mpt";'
+                         '\n\t- Если "3" то "Без шаблона";'
+                         '\n\t- Иначе введите полный путь например "C:\Program Files\RastrWin3\RastrWin3\SHABLON\мегаточка.mpt": '
+                         '\n\n\t СТРОКА ВВОДА: ')
+    if SHABLON_NAME == "1":
+        SHABLON = r"C:\Program Files\RastrWin3\RastrWin3\SHABLON\мегаточка.mpt"
+        print(f'\nВыбран: {SHABLON}')
+    elif SHABLON_NAME == "2":
+        SHABLON = r"D:\BarsMDP\SHABLON\мегаточка_смзу.mpt"
+        print(f'\nВыбран: {SHABLON}')
+    else:
+        SHABLON = SHABLON_NAME
+        print(f'\nВведен пользователем: {SHABLON}')
 
-    :param path_file: файл мегатоски *.mpt
-    :param path_save_excel:
-    :return:
-    """
-    wb = Workbook()
-    RASTR.Load(1, path_file, r'C:\Program Files\RastrWin3\RastrWin3\SHABLON\мегаточка.mpt')
-    for n_point in range(RASTR.GetMinUserPoint(), RASTR.GetMaxUserPoint()):
-        wb.create_sheet(title=str(n_point))
-        ws = wb[str(n_point)]
-        RASTR.ReadPnt(n_point)
-        RASTR.rgm("")
-        table_ = RASTR.Tables("area2")
-        list_ = []
-        count = table_.Count - 1
-        for i in range(0, count):
-            name = table_.Cols('name').Z(i)
-            npa = table_.Cols('npa').Z(i)
-            pg = table_.Cols('pg').Z(i)
-            pn = table_.Cols('pn').Z(i)
-            list_.append([npa, name, pg, pn])
-        for index, name_cell in enumerate(['Номер', 'Название', 'Pген', 'Pнаг']):
-            ws[f'{get_column_letter(index + 1)}{1}'] = name_cell
-        for index, i in enumerate(list_):
-            ws[f'{get_column_letter(1)}{index + 2}'] = int(i[0])
-            ws[f'{get_column_letter(2)}{index + 2}'] = str(i[1])
-            ws[f'{get_column_letter(3)}{index + 2}'] = float(i[2])
-            ws[f'{get_column_letter(4)}{index + 2}'] = float(i[3])
-    wb.save(filename=path_save_excel)
+    if path_file is not None:
+        wb = Workbook()
+        RASTR.Load(1, path_file, rf'{SHABLON}')
+        for n_point in range(RASTR.GetMinUserPoint(), RASTR.GetMaxUserPoint()):
+            wb.create_sheet(title=str(n_point))
+            ws = wb[str(n_point)]
+            RASTR.ReadPnt(n_point)
+            RASTR.rgm("")
+            table_area2 = RASTR.Tables("area2")
+            list_data_area2 = []
+            max_row_table_area2 = table_area2.Count - 1
+            for index in range(0, max_row_table_area2):
+                name = table_area2.Cols('name').Z(index)
+                npa = table_area2.Cols('npa').Z(index)
+                pg = table_area2.Cols('pg').Z(index)
+                pn = table_area2.Cols('pn').Z(index)
+                list_data_area2.append([npa, name, pg, pn])
+            for index, name_cell in enumerate(['Номер', 'Название', 'Pген', 'Pнаг']):
+                ws[f'{get_column_letter(index + 1)}{1}'] = name_cell
+            for index, value in enumerate(list_data_area2):
+                ws[f'{get_column_letter(1)}{index + 2}'] = int(value[0])
+                ws[f'{get_column_letter(2)}{index + 2}'] = str(value[1])
+                ws[f'{get_column_letter(3)}{index + 2}'] = float(value[2])
+                ws[f'{get_column_letter(4)}{index + 2}'] = float(value[3])
+        wb.save(filename=path_save_excel)
 
 
 def mt_Excel(path_file: str = "file_mpt.xlsx"):
@@ -472,12 +489,11 @@ def mt_Excel(path_file: str = "file_mpt.xlsx"):
 def compare_excel_and_mpt():
     wb1 = load_workbook('file.xlsx')
     wb2 = load_workbook('file_mpt_excel.xlsx')
-
-    for index, i in enumerate(NAME_AREA_DICT['MAG_Terminal_and_BARS']):
-        ws1 = wb1[str(i)]
+    for index, name_sheet in enumerate(NAME_AREA_DICT['MAG_Terminal_and_BARS']):
+        ws1 = wb1[str(name_sheet)]
         basic_list = []
         try:
-            ws2 = wb2[str(NAME_AREA_DICT['MAG_Terminal_and_BARS'][str(i)])]
+            ws2 = wb2[str(NAME_AREA_DICT['MAG_Terminal_and_BARS'][str(name_sheet)])]
             for i_ in range(1, 26):
                 list_ = []
                 for j_ in range(1, 10):
@@ -488,10 +504,10 @@ def compare_excel_and_mpt():
                 for index_j, j_ in enumerate(basic_list[index_i]):
                     ws2[f'{get_column_letter(index_j + 1)}{index_i + 35}'].value = j_
         except KeyError:
-            print(f"'{i}' - '{str(NAME_AREA_DICT['MAG_Terminal_and_BARS'][str(i)])}'")
+            print(f'KeyError: "{name_sheet}" - "{str(NAME_AREA_DICT["MAG_Terminal_and_BARS"][str(name_sheet)])}"')
 
-    for index, sheet in enumerate(wb2.sheetnames):
-        ws = wb2[str(sheet)]
+    for index, name_sheet in enumerate(wb2.sheetnames):
+        ws = wb2[str(name_sheet)]
         if sheet != 'Sheet':
             ch1 = ScatterChart()
             ch1.title = f"Генерация"
@@ -561,16 +577,11 @@ def compare_excel_and_mpt():
 
 
 def main():
-    create_dict_out_xml(file_name_xml=r"L:\SER\Okhrimenko\Project_Py3\BARS_RastrWin3\analysis\data\file.xml")
-
-    mt_BarsMDP(path_file=r"L:\SER\Okhrimenko\Project_Py3\BARS_RastrWin3\analysis\data\141121-17.mpt",
-               path_save_excel="file_mpt.xlsx")
-
-    mt_Excel(path_file=r"L:\SER\Okhrimenko\Project_Py3\BARS_RastrWin3\analysis\data\file_mpt.xlsx")
-
+    create_dict_out_xml()
+    mt_BarsMDP()
+    mt_Excel()
     compare_excel_and_mpt()
 
 
-if __name__ == '__main__':
-    main()
-    # mt_Excel(path_file = "file_mpt.xlsx")
+main()
+input('Нажмите Enter')
