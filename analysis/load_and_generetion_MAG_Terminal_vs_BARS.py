@@ -8,9 +8,37 @@ import pandas as pd
 from openpyxl import (Workbook, load_workbook)
 from openpyxl.chart import (ScatterChart, Reference, Series)
 from openpyxl.utils import get_column_letter
-from win32com.client import Dispatch
+from win32com.client import Dispatch, WithEvents
 
-RASTR = Dispatch('Astra.Rastr')
+
+class RastrEvents:
+    """
+    Метод Onprot - выводит сообщения написанные: rastr.Printp("Сообщение из Printp")\n
+    Метод OnLog
+    """
+
+    def OnLog(self, code, level, id, name, index, description, formName):
+        if code == 2:
+            print('[Error]', description)
+        elif code == 3:
+            print('[Warning]', description)
+        elif code == 4:
+            print('[Lightbulb]', description)
+        elif code == 5:
+            print('[Info]', description)
+        else:
+            print([code, description])
+
+    def Onprot(self, message):
+        print(message)
+
+
+OUTPUT = False
+if OUTPUT is True:
+    RASTR = Dispatch('Astra.Rastr')
+    WithEvents(RASTR, RastrEvents)
+else:
+    RASTR = Dispatch('Astra.Rastr')
 
 NAME_AREA_DICT = {
     "ti":
@@ -363,7 +391,7 @@ def mt_BarsMDP(path_save_excel: str = "file_mpt.xlsx") -> None:
         path_file = None
     SHABLON_NAME = input('SHABLON:'
                          '\n\t- Если "1" то "C:\Program Files\RastrWin3\RastrWin3\SHABLON\мегаточка.mpt";'
-                         '\n\t- Если "2" то "C:\Program Files\RastrWin3\RastrWin3\SHABLON\мегаточка.mpt";'
+                         '\n\t- Если "2" то "D:\BarsMDP\SHABLON\мегаточка_смзу.mpt";'
                          '\n\t- Если "3" то "Без шаблона";'
                          '\n\t- Иначе введите полный путь например "C:\Program Files\RastrWin3\RastrWin3\SHABLON\мегаточка.mpt": '
                          '\n\n\t СТРОКА ВВОДА: ')
@@ -405,10 +433,6 @@ def mt_BarsMDP(path_save_excel: str = "file_mpt.xlsx") -> None:
 
 
 def mt_Excel(path_file: str = "file_mpt.xlsx"):
-    """
-    :param path_file:
-    :return:
-    """
     wb_new = Workbook()
     wb = load_workbook(filename=path_file)
     ws = wb['25']
@@ -504,11 +528,11 @@ def compare_excel_and_mpt():
                 for index_j, j_ in enumerate(basic_list[index_i]):
                     ws2[f'{get_column_letter(index_j + 1)}{index_i + 35}'].value = j_
         except KeyError:
-            print(f'KeyError: "{name_sheet}" - "{str(NAME_AREA_DICT["MAG_Terminal_and_BARS"][str(name_sheet)])}"')
+            print(f'\tKeyError: "{name_sheet}" - "{str(NAME_AREA_DICT["MAG_Terminal_and_BARS"][str(name_sheet)])}"')
 
     for index, name_sheet in enumerate(wb2.sheetnames):
         ws = wb2[str(name_sheet)]
-        if sheet != 'Sheet':
+        if name_sheet != 'Sheet':
             ch1 = ScatterChart()
             ch1.title = f"Генерация"
             xvalues_ = Reference(ws,
@@ -574,6 +598,7 @@ def compare_excel_and_mpt():
             ws.add_chart(ch2, f'{get_column_letter(12)}{str(50)}')
 
     wb2.save('MAG_MPT_Excel.xlsx')
+    print("\nСохранен файл: MAG_MPT_Excel.xlsx")
 
 
 def main():
@@ -584,4 +609,4 @@ def main():
 
 
 main()
-input('Нажмите Enter')
+input('\tНажмите Enter!')
