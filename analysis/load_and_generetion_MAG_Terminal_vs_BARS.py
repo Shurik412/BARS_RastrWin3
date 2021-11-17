@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import csv
 import os.path
+from os import path, mkdir
 import xml.etree.ElementTree as et
 from re import findall
 
@@ -17,7 +18,8 @@ class RastrEvents:
     Метод OnLog
     """
 
-    def OnLog(self, code, level, id, name, index, description, formName):
+    @staticmethod
+    def OnLog(code, level, id, name, index, description, formName):
         if code == 2:
             print('[Error]', description)
         elif code == 3:
@@ -29,7 +31,8 @@ class RastrEvents:
         else:
             print([code, description])
 
-    def Onprot(self, message):
+    @staticmethod
+    def Onprot(message):
         print(message)
 
 
@@ -265,6 +268,8 @@ NAME_AREA_DICT = {
         }
 }
 
+mkdir("Files")
+
 
 def create_dict_out_xml(file_name_xml: str = "file.xml"):
     xroot = et.parse(file_name_xml).getroot()
@@ -286,7 +291,7 @@ def create_dict_out_xml(file_name_xml: str = "file.xml"):
         rename_format_time = findall(pattern, value)
         out_df.Time = out_df.Time.replace(value, rename_format_time[0])
 
-    NAME_FILE_CSV = "csv_area2.csv"
+    NAME_FILE_CSV = "Files/csv_area2.csv"
     out_df.to_csv(NAME_FILE_CSV, sep=';', encoding='1251')
     wb = Workbook()
     ws = wb.active
@@ -296,7 +301,7 @@ def create_dict_out_xml(file_name_xml: str = "file.xml"):
         reader = csv.reader(file_csv, delimiter=';')
         for row in reader:
             ws.append(row)
-    wb.save("file.xlsx")
+    wb.save("Files/file.xlsx")
     ws = wb.active
     for key in NAME_AREA_DICT['ti']:
         list_name_ = []
@@ -324,7 +329,7 @@ def create_dict_out_xml(file_name_xml: str = "file.xml"):
             ws_[f'{get_column_letter(3)}{index + 2}'] = value
         for index, value in enumerate(list_value_):
             ws_[f'{get_column_letter(4)}{index + 2}'] = float(value)
-    wb.save("file.xlsx")
+    wb.save("Files/file.xlsx")
     list_name_title_excel = ['Час(точка)', 'Название', 'Время', 'Р, МВт']
     for key in NAME_AREA_DICT['Correction']:
         ws_2 = wb[key]
@@ -335,7 +340,7 @@ def create_dict_out_xml(file_name_xml: str = "file.xml"):
                 ws_2.cell(row=1, column=j + 6).value = str(list_name_title_excel[j])
                 ws_2.cell(row=1, column=j + 1).value = str(list_name_title_excel[j])
         ws_2.title = NAME_AREA_DICT['Correction2'][key]
-    wb.save("file.xlsx")
+    wb.save("Files/file.xlsx")
     for key in NAME_AREA_DICT['Name_area2']:
         _ws = wb[key]
         ch = ScatterChart()
@@ -377,14 +382,14 @@ def create_dict_out_xml(file_name_xml: str = "file.xml"):
         # ch.y_axis.scaling.min = 0
         # ch.y_axis.scaling.max = 10
         _ws.add_chart(ch1, f'{get_column_letter(11)}{str(25)}')
-    wb.save("file.xlsx")
+    wb.save("Files/file.xlsx")
 
 
-def mt_BarsMDP(path_save_excel: str = "file_mpt.xlsx") -> None:
+def mt_BarsMDP(path_save_excel: str = "Files/file_mpt.xlsx") -> None:
     check_file_mptsmz = os.path.isfile('smzu_mega_XML_UR_MDP.mptsmz')
-    check_file_mpt = os.path.isfile('data/date.mpt')
+    check_file_mpt = os.path.isfile('date.mpt')
     if check_file_mpt:
-        path_file = 'data/date.mpt'
+        path_file = 'date.mpt'
     elif check_file_mptsmz:
         path_file = 'smzu_mega_XML_UR_MDP.mptsmz'
     else:
@@ -393,7 +398,8 @@ def mt_BarsMDP(path_save_excel: str = "file_mpt.xlsx") -> None:
                          '\n\t- Если "1" то "C:\Program Files\RastrWin3\RastrWin3\SHABLON\мегаточка.mpt";'
                          '\n\t- Если "2" то "D:\BarsMDP\SHABLON\мегаточка_смзу.mpt";'
                          '\n\t- Если "3" то "Без шаблона";'
-                         '\n\t- Иначе введите полный путь например "C:\Program Files\RastrWin3\RastrWin3\SHABLON\мегаточка.mpt": '
+                         '\n\t- Иначе введите полный путь например '
+                         '"C:\Program Files\RastrWin3\RastrWin3\SHABLON\мегаточка.mpt": '
                          '\n\n\t СТРОКА ВВОДА: ')
     if SHABLON_NAME == "1":
         SHABLON = r"C:\Program Files\RastrWin3\RastrWin3\SHABLON\мегаточка.mpt"
@@ -432,7 +438,7 @@ def mt_BarsMDP(path_save_excel: str = "file_mpt.xlsx") -> None:
         wb.save(filename=path_save_excel)
 
 
-def mt_Excel(path_file: str = "file_mpt.xlsx"):
+def mt_Excel(path_file: str = "Files/file_mpt.xlsx") -> None:
     wb_new = Workbook()
     wb = load_workbook(filename=path_file)
     ws = wb['25']
@@ -507,12 +513,12 @@ def mt_Excel(path_file: str = "file_mpt.xlsx"):
         # ch.y_axis.scaling.min = 0
         # ch.y_axis.scaling.max = 10
         ws.add_chart(ch1, f'{get_column_letter(7)}{str(17)}')
-    wb_new.save('file_mpt_excel.xlsx')
+    wb_new.save('Files/file_mpt_excel.xlsx')
 
 
-def compare_excel_and_mpt():
-    wb1 = load_workbook('file.xlsx')
-    wb2 = load_workbook('file_mpt_excel.xlsx')
+def compare_excel_and_mpt() -> None:
+    wb1 = load_workbook('Files/file.xlsx')
+    wb2 = load_workbook('Files/file_mpt_excel.xlsx')
     for index, name_sheet in enumerate(NAME_AREA_DICT['MAG_Terminal_and_BARS']):
         ws1 = wb1[str(name_sheet)]
         basic_list = []
@@ -597,8 +603,101 @@ def compare_excel_and_mpt():
             # ch.y_axis.scaling.max = 10
             ws.add_chart(ch2, f'{get_column_letter(12)}{str(50)}')
 
-    wb2.save('MAG_MPT_Excel.xlsx')
-    print("\nСохранен файл: MAG_MPT_Excel.xlsx")
+    wb2.save('Files/MAG_MPT_Excel.xlsx')
+    print("\nСохранен файл: Files/MAG_MPT_Excel.xlsx")
+
+
+def file_output() -> None:
+    wb_new = Workbook()
+    wb_old = load_workbook(filename='Files/MAG_MPT_Excel.xlsx')
+    list_name_sheet_old = []
+    for index, name_sheet in enumerate(wb_old.sheetnames):
+        list_name_sheet_old.append(name_sheet)
+    list_name_sheet_old.remove('Sheet')
+    ws_new = wb_new.active
+    ws_new.title = 'Графики'
+    for name_sheet in list_name_sheet_old:
+        wb_new.create_sheet(title=name_sheet)
+    for name_sheet in wb_new.sheetnames:
+        if name_sheet != 'Графики':
+            ws_old = wb_old[str(name_sheet)]
+            ws_new = wb_new[str(name_sheet)]
+            for index_row, row in enumerate(ws_old.iter_rows(min_row=1, max_col=5, max_row=24, values_only=True)):
+                for index_column in range(0, 5):
+                    ws_new[f'{get_column_letter(index_column + 1)}{index_row + 2}'].value = row[index_column]
+                ws_new[f'{get_column_letter(1)}{1}'].value = 'Мегаточка'
+
+            for index_row, row in enumerate(ws_old.iter_rows(min_row=35, max_col=9, max_row=60, values_only=True)):
+                for index_column in range(0, 9):
+                    ws_new[f'{get_column_letter(index_column + 8)}{index_row + 2}'].value = row[index_column]
+                ws_new[f'{get_column_letter(8)}{1}'].value = 'ОИК'
+
+            ch1 = ScatterChart()
+            ch1.title = f"Генерация"
+            ch1.x_axis.title = "Время, час"  # название оси Х
+            ch1.y_axis.title = "Активная мощность, МВт"  # название оси У
+            ch1.x_axis.scaling.min = 1
+            ch1.x_axis.scaling.max = 23
+            # ch.y_axis.scaling.min = 0
+            # ch.y_axis.scaling.max = 10
+
+            xvalues_ = Reference(ws_new,
+                                 min_col=1,
+                                 min_row=3,
+                                 max_row=25)
+            values_ = Reference(ws_new,
+                                min_col=4,
+                                min_row=3,
+                                max_row=25)
+            series_ = Series(values_, xvalues_, title_from_data=False, title="Мегаточка")
+            ch1.series.append(series_)
+
+            xvalues_1 = Reference(ws_new,
+                                  min_col=8,
+                                  min_row=3,
+                                  max_row=26)
+
+            values_1 = Reference(ws_new,
+                                 min_col=11,
+                                 min_row=3,
+                                 max_row=26)
+            series_1 = Series(values_1, xvalues_1, title_from_data=False, title='ОИК')
+            ch1.series.append(series_1)
+            ws_new.add_chart(ch1, f'{get_column_letter(1)}{str(28)}')
+
+            ch2 = ScatterChart()
+            ch2.title = f"Потребление"
+            ch2.x_axis.title = "Время, час"  # название оси Х
+            ch2.y_axis.title = "Активная мощность, МВт"  # название оси У
+            ch2.x_axis.scaling.min = 1
+            ch2.x_axis.scaling.max = 23
+            # ch.y_axis.scaling.min = 0
+            # ch.y_axis.scaling.max = 10
+
+            xvalues_ = Reference(ws_new,
+                                 min_col=1,
+                                 min_row=3,
+                                 max_row=25)
+            values_ = Reference(ws_new,
+                                min_col=5,
+                                min_row=3,
+                                max_row=25)
+            series_ = Series(values_, xvalues_, title_from_data=False, title="Мегаточка")
+            ch2.series.append(series_)
+
+            xvalues_1 = Reference(ws_new,
+                                  min_col=13,
+                                  min_row=3,
+                                  max_row=26)
+
+            values_1 = Reference(ws_new,
+                                 min_col=16,
+                                 min_row=3,
+                                 max_row=26)
+            series_1 = Series(values_1, xvalues_1, title_from_data=False, title='ОИК')
+            ch2.series.append(series_1)
+            ws_new.add_chart(ch2, f'{get_column_letter(11)}{str(28)}')
+    wb_new.save(filename='Output_Excel.xlsx')
 
 
 def main():
@@ -606,7 +705,8 @@ def main():
     mt_BarsMDP()
     mt_Excel()
     compare_excel_and_mpt()
+    file_output()
 
 
 main()
-input('\tНажмите Enter!')
+# input('\tНажмите Enter!')
