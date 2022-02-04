@@ -128,5 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 /analysis/data/
-/MAGTerminal/
+/MAGTerminal/main.py
 /analysis/
